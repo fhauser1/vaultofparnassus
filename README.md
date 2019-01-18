@@ -2,8 +2,7 @@
 
 
 ## What is in the box?
-This is a small collection of diverse code snippets written in python and R from years of scripting in computational biology. The entire collection is significantly larger, handles blast queries, alignments, phylogenetic trees and more but is at this moment not usefull for the public without investing more time in particular on documentation and setup. If you are a beginner in python/R you should not start with this code - you will very likely not understand the purpose of the code and will give up before getting anywhere. If you are a intermediate level scripter maybe you find some interesting code snippets and concepts or solutions and I hope they turn out to be usefull for your project. If you are an expert scripter you might see it as challenge to fix various problems but more likely just simply smile and move on.
-
+This is a small collection of diverse code snippets written in python and R from years of scripting in computational biology. The entire collection is significantly larger, handles blast queries, alignments, phylogenetic trees and more but is at this moment not usefull for the public without investing more time in particular on documentation and setup. Maybe you find some interesting code snippets and concepts or solutions and I hope they turn out to be useful for your project. 
 ## What is not in the box?
 If you find a package for python/R that does the job for you don't waste time looking at the code here - it lacks documentation and at the moment it will likely not run out of the box. Furthermore basically the code snippets here are mainly wrappers around many of those packages which I generated to combine these into more complex workflows in computational biology.
 
