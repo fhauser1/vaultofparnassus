@@ -1,7 +1,12 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division  # forces float output for division
 from __future__ import print_function
+from __future__ import absolute_import
 
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import math
 import sys
@@ -11,12 +16,12 @@ import uncertainties
 from uncertainties import ufloat
 import rpy2
 
-from rpy2 import rinterface
+from rpy2 import rinterface, rinterface_lib
 import rpy2.rlike.container as rlc
 from rpy2 import robjects
 import scipy.stats
 
-import fhutils
+from . import fhutils
 
 # python based common statistical measurements
 
@@ -166,7 +171,7 @@ def propagatetable(datatable, groupcolumn, measurecolumn, errorcolumn):
     if isinstance(groupcolumn, str):
         groupcolumn = (groupcolumn,)
 
-    if isinstance(groupcolumn, unicode):
+    if isinstance(groupcolumn, str):
         groupcolumn = (groupcolumn,)
 
     keyvalue = []
@@ -187,7 +192,7 @@ def propagatetable(datatable, groupcolumn, measurecolumn, errorcolumn):
     resultable = fhutils.Table('propagate')
     resultable.columnames = list(groupcolumn) + [measurecolumn, errorcolumn]
 
-    for k, valuelist in keyvalue.items():
+    for k, valuelist in list(keyvalue.items()):
         valuelist = [ele for ele in valuelist if ele != 'NA']  # NA filtered out
         ufavg = ufmeanstd(valuelist, asufloat=True)
         row = list(k)
@@ -204,7 +209,7 @@ def propagatetable(datatable, groupcolumn, measurecolumn, errorcolumn):
 
 ############################# rpy2 helpers ##################################
 
-def pyobj2dataframe(valuelis, columnames=True, rownames=False):
+def fhtab2dataframe(valuelis, columnames=True, rownames=False):
     """
 
     create rpy2-R data frame from table or list
@@ -234,6 +239,7 @@ def pyobj2dataframe(valuelis, columnames=True, rownames=False):
     tablist = []
     for col in pytab.columnames:
         coldata = pytab.getcolumn(col)
+#        print (coldata,'coldata',col,'col')
         nv = []
         for ele in coldata:
             if isinstance(ele, list) or isinstance(ele, tuple):
@@ -243,11 +249,12 @@ def pyobj2dataframe(valuelis, columnames=True, rownames=False):
             elif ele.isdigit():
                 nv.append(float(ele))
             elif ele == 'NA':
-                nv.append(rinterface.NARealType())
+                nv.append(rinterface_lib.sexp.NARealType())
             else:
                 nv.append(fhutils.is_numeric(ele))  # try to convert into most likely type
         if sum([1 for ele in nv if isinstance(ele, float) or isinstance(ele, int)]) < len(nv):
-            tablist.append((col, robjects.vectors.StrVector(nv)))
+            tablist.append((col, robjects.vectors.StrVector([str(x) for x in nv]))) # enforce str for all elements
+#            tablist.append((col, robjects.vectors.StrVector(nv)))
         else:
             tablist.append((col, robjects.vectors.FloatVector(nv)))
 
@@ -258,13 +265,13 @@ def pyobj2dataframe(valuelis, columnames=True, rownames=False):
     return dataframe
 
 
-def dataframe2pyobj(dataframe):
+def dataframe2fhtab(dataframe):
     table = fhutils.Table()
 
     colnames = list(dataframe.colnames)
     rownames = list(dataframe.rownames)
     col2data = []
-    for cn, col in dataframe.items():
+    for cn, col in list(dataframe.items()):
         if isinstance(col, robjects.vectors.FactorVector) is True:
             colevel = tuple(col.levels)
             col = tuple(col)
@@ -307,7 +314,7 @@ def dictorlist(pydic):
 
 def rlisttodic(rlist):
     tmp = []
-    for ele in rlist.items():
+    for ele in list(rlist.items()):
         key = ele[0]
         value = list(ele[1])
         if len(value) == 1:
@@ -354,13 +361,14 @@ def statoverview(valuelis, group='NA', filename='overview_data.txt', gformat='pd
     rconsole = rpystatinit()
     
     rgeneralstats = rconsole("rgeneralstats")
-    dataframe = pyobj2dataframe(valuelis)
+    dataframe = fhtab2dataframe(valuelis)
+    
     from rpy2.robjects.packages import importr
-
+    
     grdevices = importr('grDevices')
     grdevices.pdf(file=fhutils.renamefilename(filename, suffix=gformat))
 
-    gdic = {'NA': rinterface.NARealType()}
+    gdic = {'NA': rinterface_lib.sexp.NARealType()}
     group = gdic.get(group, group)
 
     data = rgeneralstats(data=dataframe, group=group)
@@ -378,7 +386,7 @@ def pysummary(valuelis, measurevar='', groupvars='', outputformat='long', na_rm=
 
     rconsole = rpystatinit()
     rsummaryse = rconsole("summarySE")
-    dataframe = pyobj2dataframe(valuelis)
+    dataframe = fhtab2dataframe(valuelis)
     if isinstance(groupvars, tuple) is True or isinstance(groupvars, list) is True:
         groupvars = robjects.vectors.StrVector(tuple(groupvars))
 
@@ -389,7 +397,7 @@ def pysummary(valuelis, measurevar='', groupvars='', outputformat='long', na_rm=
         measurevars = robjects.vectors.StrVector(tuple((measurevar, 'N', 'sd', 'sum', 'min', 'max')))
         aggregate = rlongtowide(aggregate, measurevars, groupvars)
 
-    aggregate = dataframe2pyobj(aggregate)
+    aggregate = dataframe2fhtab(aggregate)
 
     return aggregate
 
@@ -401,7 +409,7 @@ def pycorrelation(valuelis, numericvars=list(), filename='correlation_data.txt',
     """
     rconsole = rpystatinit()
     rcorrelation = rconsole("rcorrelation")
-    dataframe = pyobj2dataframe(valuelis)
+    dataframe = fhtab2dataframe(valuelis)
     data = rcorrelation(data=dataframe, numericvars=robjects.vectors.StrVector(tuple(numericvars)), method=method,
                         adjust=adjust)
 
@@ -598,7 +606,7 @@ def shapirowillk(valuelist):
 def pynormtest(valuelis, numericvars=list(), filename='normtest_data.txt', gformat='pdf'):
     rconsole = rpystatinit()
     rnormcheck = rconsole("rnormcheck")
-    dataframe = pyobj2dataframe(valuelis)
+    dataframe = fhtab2dataframe(valuelis)
 
     from rpy2.robjects.packages import importr
     grdevices = importr('grDevices')
@@ -618,7 +626,7 @@ def pynlsfit(valuelis, formulastr='', startvalues=list(), filename='nlsfit.txt',
     """
     rconsole = rpystatinit()
     rnonlinfit = rconsole("rnonlinfit")
-    dataframe = pyobj2dataframe(valuelis)
+    dataframe = fhtab2dataframe(valuelis)
 
     from rpy2.robjects.packages import importr
 
@@ -738,7 +746,7 @@ def bin_values(lis, bins, relative=False):
                 bincount.append((minborder, num))
                 break
 
-    bincountdic = dict([(k, len(v)) for k, v in fhutils.keylis2dic(bincount).items()])
+    bincountdic = dict([(k, len(v)) for k, v in list(fhutils.keylis2dic(bincount).items())])
 
     bincount = [(k, bincountdic.get(k, 0)) for k in bintup]
     bincount = [(str(k[0]) + '-' + str(k[1]), v) for k, v in bincount if k not in (lowerunder, upperover)]
@@ -780,10 +788,10 @@ def pyanova(table, formula, term, filename='anovaimage', gformat='pdf'):
     grdevices = importr('grDevices')
     grdevices.pdf(file=fhutils.renamefilename(filename, suffix=gformat))
 
-    dataframe = pyobj2dataframe(table)
+    dataframe = fhtab2dataframe(table)
     results = ranova(data=dataframe, formulastring=formula, term=term)
-    aovw = dataframe2pyobj(results[0])
-    tukey = dataframe2pyobj(results[1])
+    aovw = dataframe2fhtab(results[0])
+    tukey = dataframe2fhtab(results[1])
 
     grdevices.dev_off()
 
@@ -794,9 +802,9 @@ def pykruskalwallis(table, formula, term, filename='kruskalimage', gformat='pdf'
     rconsole=rpystatinit()
     rkruskal = rconsole("rkruskal")
 
-    dataframe = pyobj2dataframe(table)
+    dataframe = fhtab2dataframe(table)
     results = rkruskal(data=dataframe, formulastring=formula, term=term)
-    results = dataframe2pyobj(results)
+    results = dataframe2fhtab(results)
     newtab = fhutils.Table('kruskal')
     newtab.columnames = ['group1', 'group2', 'p-value']
     for row in results:
@@ -808,11 +816,11 @@ def pykruskalwallis(table, formula, term, filename='kruskalimage', gformat='pdf'
 def pyrmultcomp(table,measurevar,groupvar,contrastsvector = 'none'):
     rconsole=rpystatinit()
     rmultcomp = rconsole("rmultcomp")
-    dataframe = pyobj2dataframe(table)
+    dataframe = fhtab2dataframe(table)
     contrastsvector = tuple([ "{tu1} - {tu2} = 0".format(tu1 = tu[0],tu2=tu[1]) for tu1,tu2 in contrastsvector])
     contrastsvector = robjects.vectors.StrVector(contrastsvector)
     results = rmultcomp(data=dataframe, measurevar=measurevar,groupvar=groupvar, contrastsvector=contrastsvector)
-    results = dataframe2pyobj(results)
+    results = dataframe2fhtab(results)
     newtab = fhutils.Table('multcomp')
     newtab.columnames = ['group1', 'group2', 'p-value']
     for row in results:
@@ -822,9 +830,9 @@ def pyrmultcomp(table,measurevar,groupvar,contrastsvector = 'none'):
 def pyrnparcomp(table,measurevar,groupvar):
     rconsole=rpystatinit()
     rnparcomp = rconsole("rnparcomp")
-    dataframe = pyobj2dataframe(table)
+    dataframe = fhtab2dataframe(table)
     results = rmultcomp(data=dataframe, measurevar=measurevar,groupvar=groupvar)
-    results = dataframe2pyobj(results)
+    results = dataframe2fhtab(results)
     newtab = fhutils.Table('nparcomp')
     newtab.columnames = ['group1', 'group2', 'p-value']
     for row in results:
@@ -838,5 +846,5 @@ def pairwisettest(datatable,padjmethod="none"):
     interaction significance
     
     """
-    dataframe = pyobj2dataframe(datatable)
+    dataframe = fhtab2dataframe(datatable)
     pass

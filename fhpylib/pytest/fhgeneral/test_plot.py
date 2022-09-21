@@ -1,8 +1,9 @@
+from builtins import range
 import sys
 import os
 
 import matplotlib
-matplotlib.use('qt4agg')
+# matplotlib.use('qt4agg')
 import matplotlib.pyplot
 
 # matplotlib.pyplot.switch_backend("TkAgg")
@@ -16,7 +17,7 @@ def testrun():
     rp=6
     lp=9
     
-    data=[range(0+i,3+i) for i in range(1,25)]
+    data=[list(range(0+i,3+i)) for i in range(1,25)]
     data=[tuple(ele[0:2]+[rp,2,'k']) if ele[2]<10 else tuple(ele[0:2]+[lp,6,'o']) for ele in data]
     tab =Table('testdata')
     tab.data=data
@@ -24,10 +25,10 @@ def testrun():
     tab.write('testplotdata.txt')
 
     statoverview(tab)
-    # figure=matplotlib.pyplot.figure('ooop')
-    # matplotlib.pyplot.show()
-    # matplotlib.pyplot.close('all')
-    # matplotlib.pyplot.close(figure)
+#    figure=matplotlib.pyplot.figure('ooop')
+#    matplotlib.pyplot.show()
+#    matplotlib.pyplot.close('all')
+#    matplotlib.pyplot.close(figure)
     
     
     ggscatterplot(tabdata=tab,xvar='A',yvar='B',group='',error='',figname='a.pdf',main='a',

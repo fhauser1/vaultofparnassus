@@ -37,6 +37,11 @@ NOTE: supported are
 - single table based drop, insert, create, select, where col in, where col (!)= 
 - NOT AVAILABLE are any joins etc.
 """
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import sqlite3
 from fhgeneral.fhutils import Table, keylis2dic
 
@@ -115,7 +120,7 @@ class DBTable(Table):
             filtercolumn = [filterinfo[i] for i in range(0, len(filterinfo), 2)]
             filterarg = [filterinfo[i] for i in range(1, len(filterinfo), 2)]
             assert len(filtercolumn) == len(filterarg), 'ERROR IN FILTERARGUMENTS'
-            filterhash = dict(zip(filtercolumn, filterarg))
+            filterhash = dict(list(zip(filtercolumn, filterarg)))
         else:
             filterhash = filterinfo
         return filterhash
@@ -123,7 +128,7 @@ class DBTable(Table):
     def set_parameter(self):
 
         if isinstance(self.data, dict):
-            self.data = self.data.items()
+            self.data = list(self.data.items())
         if self.filterinfo:
             self.filterinfo = self.__format_filterarg(self.filterinfo)
         if self.ignoreinfo:
@@ -197,12 +202,12 @@ class SQLiteTools(object):
                 attached=self.attachedname)
             cur.execute(attachsql)
             if self.test > 0:
-                print 'attaching database: ' + attachsql
-                print self.attachedname
-                print self.database2
+                print('attaching database: ' + attachsql)
+                print(self.attachedname)
+                print(self.database2)
 
         if self.test >= 1:
-            print '\nconnecting to database'
+            print('\nconnecting to database')
         return con, cur
 
     def current_tables(self):
@@ -213,7 +218,7 @@ class SQLiteTools(object):
         con.close()
         tables = [ele[0] for ele in rescol]
         if self.test >= 1:
-            print '\nconnection to database closed'
+            print('\nconnection to database closed')
         return tables
 
     @staticmethod
@@ -249,7 +254,7 @@ class SQLiteTools(object):
                                                         columnamestr=self.colnamestrgen(tabobj.columnames),
                                                         valuestr=self.valuestrgen(tabobj.columnames))
         if self.test:
-            print insert_query
+            print(insert_query)
         tabobj.command.update({'insert_query': insert_query})
         return insert_query
 
@@ -273,7 +278,7 @@ class SQLiteTools(object):
             raise NameError('NO DATA IN TABLE ')
         if not tabobj.typeinfo or tabobj.typeinfo == 'auto' or len(tabobj.typeinfo) != len(tabobj.columnames):
             if self.test > 0:
-                print '\nnno or auto or differing length of columnames and typeinfo'
+                print('\nnno or auto or differing length of columnames and typeinfo')
 
             for row in tabobj:
                 tmp = []
@@ -297,7 +302,7 @@ class SQLiteTools(object):
         if self.nonempty:
             tabobj.typenames = [ele + ' NOT NULL' for ele in tabobj.typenames]
 
-        typelis = zip(list(tabobj.columnames), list(tabobj.typenames))
+        typelis = list(zip(list(tabobj.columnames), list(tabobj.typenames)))
         typelis = [(typelis[0][0], typelis[0][1] + ' PRIMARY KEY ASC NOT NULL ')] + typelis[1:]
         columdefinition = ''.join(['(', ','.join([' '.join(ele) for ele in typelis]) + ')'])
         create_query = SQL_TEMPLATEDIC['create'].format(tablenamestr=tabobj.tablename, columdefinition=columdefinition)
@@ -321,7 +326,7 @@ class SQLiteTools(object):
         """formating of WHERE COLUMN  != ARG /NOT IN LIST statement and adding to command dict """
         excludesql = []
         place_arg = []
-        for k, v in tabobj.ignoreinfo.items():
+        for k, v in list(tabobj.ignoreinfo.items()):
             if isinstance(v, tuple) or isinstance(v, list):
                 if len(v) < self.querylimit:
                     excludesel_sql = SQL_TEMPLATEDIC['excludein'].format(ignorecolumn=k, ignorearg=self.valuestrgen(v))
@@ -347,7 +352,7 @@ class SQLiteTools(object):
         """formating of WHERE COLUMN  = ARG / IN LIST statement and adding to command dict """
         filtersql = []
         place_arg = []
-        for k, v in tabobj.filterinfo.items():
+        for k, v in list(tabobj.filterinfo.items()):
             if isinstance(v, tuple) or isinstance(v, list):
                 if len(v) < self.querylimit:
                     filter_sql = SQL_TEMPLATEDIC['filterin'].format(filtercolumn=k, filterarg=self.valuestrgen(v))
@@ -381,7 +386,7 @@ class SQLiteTools(object):
     def select_sql(self, tabobj, distinct):
         """assembling SQL from different pieces"""
         if self.test > 1:
-            print tabobj
+            print(tabobj)
 
         select_cmd = [self.sql_select(tabobj, distinct)]
         place_arg = []
@@ -412,15 +417,15 @@ class SQLiteTools(object):
             select_cmd.append(filter_sql.split('WHERE')[1])
 
             if self.test >= 1:
-                print '\n No ignore tuple provided , Filter tuple provided'
-                print tabobj.place_arg
+                print('\n No ignore tuple provided , Filter tuple provided')
+                print(tabobj.place_arg)
 
         select_cmd = ' '.join([ele for ele in select_cmd])
         tabobj.command.update({'select_query': select_cmd})
         tabobj.place_arg = place_arg
         if self.test > 1:
-            print '\n\n\n AFTER LOADING QUERY '
-            print tabobj
+            print('\n\n\n AFTER LOADING QUERY ')
+            print(tabobj)
 
         return tabobj
 
@@ -465,9 +470,9 @@ class SQLiteTools(object):
 
          """
         if self.test >= 1:
-            print tabobj.command['select_query'], tabobj.place_arg
+            print(tabobj.command['select_query'], tabobj.place_arg)
         if self.test > 1:
-            print tabobj
+            print(tabobj)
         commandlist = []
         if tabobj.create_tmp:
             for k, v, ty in tabobj.create_tmp:
@@ -489,11 +494,11 @@ class SQLiteTools(object):
         tabobj.data = data
 
         if metadata:
-            tabobj.columnames = [unicode(ele) for ele in tabobj.columnames]
+            tabobj.columnames = [str(ele) for ele in tabobj.columnames]
             if tabobj.columnames == [u'*', ]:
                 tabobj.columnames = columnames
                 tabobj.typeinfo = typeinfo
-            elif tabobj.columnames == [unicode(ele) for ele in columnames]:
+            elif tabobj.columnames == [str(ele) for ele in columnames]:
                 tabobj.typeinfo = typeinfo
 
             elif not tabobj.columnames:
@@ -505,7 +510,7 @@ class SQLiteTools(object):
                 tabobj.data = [[row[column] for column in tabobj.columnames] for row in tabobj.iterrows()]
 
         if self.test >= 1:
-            print '\nconnection to database closed'
+            print('\nconnection to database closed')
 
         return tabobj
 
@@ -514,16 +519,16 @@ class SQLiteTools(object):
         """seq of sqls to generate table """
 
         if self.test >= 1:
-            print self.sql_create(tabobj)
-            print self.sql_insert(tabobj), tabobj.data
+            print(self.sql_create(tabobj))
+            print(self.sql_insert(tabobj), tabobj.data)
 
         self.stype = 'create'
         commandlist = []
         if tabobj.tablename in self.current_tables():
-            print '\nremoving old ' + tabobj.tablename
+            print('\nremoving old ' + tabobj.tablename)
             commandlist.append((self.sql_drop(tabobj), None, 'commit'))
         else:
-            print '\nnothing to remove'
+            print('\nnothing to remove')
 
         commandlist.append((self.sql_create(tabobj), None, 'commit'))
 
@@ -546,9 +551,9 @@ class SQLiteTools(object):
         self.sqlexecute(commandlist, tablename=False)
 
         if self.test >= 1:
-            print '\n table ' + tabobj.tablename + ' generated'
+            print('\n table ' + tabobj.tablename + ' generated')
         if self.test >= 1:
-            print '\nconnection to database closed'
+            print('\nconnection to database closed')
 
     # ############################################################################
     # functions to use 
@@ -575,7 +580,7 @@ class SQLiteTools(object):
         data, _columnames, _typeinfo = self.sqlexecute(commandlist, tablename=False)
         newtable.data = data
         if self.stype == 'rowquery' and newtable.data:
-            newtable.columnames = newtable.data[0].keys()
+            newtable.columnames = list(newtable.data[0].keys())
         return newtable
 
 
@@ -626,8 +631,8 @@ class SQLiteTools(object):
         newtable = self.querysqlwrapper(newtable, metadata=True)
 
         if self.test >= 1:
-            print '\nconnection closed'
-            print newtable.command
+            print('\nconnection closed')
+            print(newtable.command)
         return newtable
 
 
@@ -647,12 +652,12 @@ class SQLiteTools(object):
         tulis = newtable.data
         dic = keylis2dic(tulis)
         if len(tulis) != len(dic):
-            print '\nsqltab2dic: duplicates eliminated uncontrolled in {0} in database {1}'.format(newtable.tablename,
-                                                                                                   self.database)
+            print('\nsqltab2dic: duplicates eliminated uncontrolled in {0} in database {1}'.format(newtable.tablename,
+                                                                                                   self.database))
             val = [item[0] for item in tulis]
             valset = set(val)
             infos = [(item, val.count(item)) for item in valset if val.count(item) > 1]
-            print infos[0]
+            print(infos[0])
 
         return dic
 
@@ -668,8 +673,8 @@ class SQLiteTools(object):
 
         newtable = self.sql2tab(tabinfo, filterinfo=filterinfo, ignoreinfo=ignoreinfo, distinct=distinct)
         if self.test >= 1:
-            print '\nconnection closed'
-            print newtable.command
+            print('\nconnection closed')
+            print(newtable.command)
         rescol = [ele[0] for ele in newtable]
         return rescol
 
@@ -679,11 +684,11 @@ class SQLiteTools(object):
         update_sql = self.sql_update(newtable)
         commandlist = [(update_sql, newtable.data, 'insert')]
         if self.test:
-            print update_sql
+            print(update_sql)
         newtable = self.sqlexecute(commandlist, newtable.tablename)
         if self.test >= 1:
-            print '\nconnection closed'
-            print '\nupdate done '
+            print('\nconnection closed')
+            print('\nupdate done ')
 
     def insertvalues(self, tabinfo, data):
         newtable = DBTable(tablename=tabinfo[0], columnames=tabinfo[1:], data=data)
@@ -691,7 +696,7 @@ class SQLiteTools(object):
         sql_insert = self.sql_insert(newtable)
         commandlist = [(sql_insert, newtable.data, 'insert')]
         if self.test:
-            print sql_insert
+            print(sql_insert)
         newtable = self.sqlexecute(commandlist, newtable.tablename)
 
 

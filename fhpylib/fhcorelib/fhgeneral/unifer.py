@@ -1,5 +1,9 @@
 # -*- encoding: utf-8 -*-
 
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
 import operator
 import itertools
 import sys
@@ -14,7 +18,7 @@ def unity(relis,spos,sep = ';',flat=True,fillin='NA'):
         
         group=list(v)
         group.sort(key=operator.itemgetter(spos))
-        submerge = itertools.izip_longest(*group,fillvalue=fillin)
+        submerge = itertools.zip_longest(*group,fillvalue=fillin)
         for ele in submerge:
             if flat:
                 uniques=set(ele)
@@ -36,9 +40,9 @@ def unity(relis,spos,sep = ';',flat=True,fillin='NA'):
         finlis.append(tuple(tmp))
     
     if len(finlis) != kcount:
-        print '############\n\nERROR IN UNITY CHECK carefully\n\n\n#######################'
-        print len(finlis)
-        print kcount
+        print('############\n\nERROR IN UNITY CHECK carefully\n\n\n#######################')
+        print(len(finlis))
+        print(kcount)
         sys.exit(1)
 
     return finlis
@@ -50,7 +54,7 @@ def regroupdata(data,keypos):
         tmp = []
         for row in data:
             tmp.append(row)
-        tmp=zip(*tmp)
+        tmp=list(zip(*tmp))
         regroup2.append(tmp)
     return regroup2    
 

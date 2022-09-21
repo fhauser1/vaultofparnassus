@@ -2,6 +2,13 @@
 
 """GENERAL FUNCTIONS FOR DATE TIME LABELLING; LOGGING; EXECUTION OF OTHER PROGRAMS"""
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import map
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 from time import localtime, strftime
 import subprocess
 import itertools
@@ -9,12 +16,12 @@ import logging.handlers
 import sys
 
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except:
     import pickle
 
 import tempfile
-from itertools import izip
+
 import operator
 from itertools import groupby
 import csv
@@ -170,8 +177,8 @@ def mergelist(lis):
 
 def filterconsecutive(mtchlis, minlength=1):
     confirmed = []
-    for tu in groupby(enumerate(mtchlis), lambda (i, x): i - x):
-        consecutive = map(operator.itemgetter(1), tu[1])
+    for tu in groupby(enumerate(mtchlis), lambda i_x: i_x[0] - i_x[1]):
+        consecutive = list(map(operator.itemgetter(1), tu[1]))
         if len(consecutive) >= minlength:
             confirmed.append((min(consecutive), max(consecutive)))
 
@@ -208,7 +215,7 @@ def flatten(listoflists):
 
 def fullflatten(listoflists):
     for el in listoflists:
-        if isinstance(el, collections.Iterable) and not isinstance(el, str) and not isinstance(el, unicode):
+        if isinstance(el, collections.Iterable) and not isinstance(el, str) and not isinstance(el, str):
             for sub in fullflatten(el):
                 yield sub
         else:
@@ -236,23 +243,23 @@ def uniquify(seq, idfun=None):
 def transpose_raw(lists):
     if not lists:
         return []
-    return map(lambda *row: list(row), *lists)
+    return list(map(lambda *row: list(row), *lists))
 
 
 def transpose(lists, defval=0):
     if not lists:
         return []
-    return map(lambda *row: [elem or defval for elem in row], *lists)
+    return list(map(lambda *row: [elem or defval for elem in row], *lists))
 
 
 def pytranspose(listarray):
-    return map(list, itertools.izip(*listarray))
+    return list(map(list, zip(*listarray)))
 
 
 def grouper(n, iterable, fillvalue=None):
     """grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"""
     args = [iter(iterable)] * n
-    return list(itertools.izip_longest(fillvalue=fillvalue, *args))
+    return list(itertools.zip_longest(fillvalue=fillvalue, *args))
 
 
 # lis=[('a1','b','c'),('a','b2','c'),('a','b','c3'),('a','b4','c'),('a','b5','c'),('a','b6','c')]
@@ -348,21 +355,21 @@ def execcommand(command, info_message='Info ', error_message='Error ', logname='
     try:
         retcode = subprocess.call(command, shell=True)
         if retcode < 0:
-            emessage = error_message + u"Error " + command.decode('utf-8') + u" was terminated by signal: " + str(
+            emessage = error_message + u"Error " + command + u" was terminated by signal: " + str(
                 retcode)
             logger.error('\n'.join((emessage, command)))
             return retcode
         elif retcode > 0:
-            emessage = error_message + u"Error " + command.decode('utf-8') + u" stopped with signal: " + str(retcode)
+            emessage = error_message + u"Error " + command + u" stopped with signal: " + str(retcode)
             logger.error('\n'.join((emessage, command)))
             return retcode
         else:
-            imessage = info_message + u";Info " + command.decode('utf-8') + u" returned " + str(retcode)
+            imessage = info_message + u";Info " + command + u" returned " + str(retcode)
             logger.info(imessage)
             return retcode
 
-    except OSError, e:
-        emessage = error_message + u"; Execution of " + command.decode('utf-8') + u" failed: " + str(e)
+    except OSError as e:
+        emessage = error_message + u"; Execution of " + command + u" failed: " + str(e)
         logger.error('\n'.join((emessage, command)))
         return retcode
 
@@ -455,12 +462,12 @@ def dict_create_2(filename, startpos, keypos, valpos, true='false'):
 
 
 def invert_dict_fast(d):
-    return dict(izip(d.itervalues(), d.iterkeys()))
+    return dict(zip(iter(d.values()), iter(d.keys())))
 
 
 def invert_listdic(d):
     inv = {}
-    for k, v in d.iteritems():
+    for k, v in d.items():
         v = list(set(v))
         if len(v) > 1:
             for nk in v:
@@ -468,21 +475,21 @@ def invert_listdic(d):
         else:
             nk = v[0]
             inv.setdefault(nk, []).append(k)
-    inv = dict([(k, v) if len(v) > 1 else (k, v[0]) for k, v in inv.items()])
+    inv = dict([(k, v) if len(v) > 1 else (k, v[0]) for k, v in list(inv.items())])
     return inv
 
 
 def dictinvert(d):
     inv = {}
-    if [1 for ele in d.values() if isinstance(ele, list)] or [1 for ele in d.values() if isinstance(ele, tuple)]:
+    if [1 for ele in list(d.values()) if isinstance(ele, list)] or [1 for ele in list(d.values()) if isinstance(ele, tuple)]:
         inv = invert_listdic(d)
         return inv
 
-    elif len(set(d.keys())) == len(d.keys()) and len(set(d.values())) == len(d.values()):
+    elif len(set(d.keys())) == len(list(d.keys())) and len(set(d.values())) == len(list(d.values())):
         inv = invert_dict_fast(d)
 
     else:
-        for k, v in d.iteritems():
+        for k, v in d.items():
             keys = inv.setdefault(v, [])
             keys.append(k)
     return inv
@@ -490,7 +497,7 @@ def dictinvert(d):
 
 def dicwriter(dic, filenam):
     tgf = open(filenam + dtk() + '.txt', 'w')
-    items = dic.items()
+    items = list(dic.items())
     tgf.write('field_1' + '\t' + 'field_2' + '\n')
     for i in range(0, len(items)):
         tgf.write(items[i][0] + '\t' + str(items[i][1]) + '\n')
@@ -522,18 +529,17 @@ def yamlld(filename):
         dic = {}
         yamldump(dic, filename)
     else:
-        with open(filename, 'rU') as f:
+        with open(filename, 'r') as f:
             dic = yaml.load(f)
     return dic
 
 
+
 class ConfigStore(object):
     """
-
     Standard container for storing 
     usual configurations
     Helpful or obstruction ???
-    
     """
 
     def __init__(self, configdic):
@@ -550,10 +556,9 @@ class ConfigStore(object):
 
     def __str__(self):
         strep = ''
-        for k, v in self.__dict__.items():
+        for k, v in list(self.__dict__.items()):
             strep += '\t' + str(k) + '\t' + str(v) + '\n'
         return strep
-
 
     @property
     def projectdir(self):
@@ -613,7 +618,7 @@ class PDframe(object):
         else:
             header = None
 
-        with open(filename, 'rU') as infi:
+        with open(filename, 'r') as infi:
             try:
                 dialect = csv.Sniffer().sniff(infi.read(1024))
                 infi.seek(0)
@@ -680,7 +685,7 @@ class Table(object):
         for row_tab1 in self.data:
             assert len(row_tab1) == len(self.columnames), str(row_tab1) + '\n' + str(len(row_tab1)) + '\n' + str(
                 len(self.columnames)) + '\n' + str(self.columnames)
-            rowdic = dict(zip(self.columnames, row_tab1))
+            rowdic = dict(list(zip(self.columnames, row_tab1)))
             key1 = rowdic[by_x]
             matchrow = valuedic.get(key1, [])
             if matchrow:
@@ -701,10 +706,10 @@ class Table(object):
             if self.columnames:
                 assert len(row) == len(self.columnames), str(row) + '\n' + str(len(row)) + '\n' + str(
                     len(self.columnames)) + '\n' + str(self.columnames)
-                rowdic = dict(zip(self.columnames, row))
+                rowdic = dict(list(zip(self.columnames, row)))
 
             else:
-                rowdic = dict(zip([i for i in range(0, len(row))], row))
+                rowdic = dict(list(zip([i for i in range(0, len(row))], row)))
 
             yield rowdic
 
@@ -721,8 +726,8 @@ class Table(object):
         for ele in column:
             if isinstance(ele, str) and ele in self.columnames:
                 pos.append(self.columnames.index(ele))
-            elif isinstance(ele, unicode) and ele in self.columnames:
-                pos.append(self.columnames.index(ele))
+            # elif isinstance(ele, str) and ele in self.columnames:
+            #     pos.append(self.columnames.index(ele))
 
             elif isinstance(ele, int) and 0 <= ele <= len(self.columnames):
                 pos.append(ele)
@@ -744,7 +749,7 @@ class Table(object):
                 dat.sort(key=operator.itemgetter(idx))
         else:
             dat.sort()
-        self.data = dat
+        self.data = list(dat)
 
     def append(self, lis):
         self.data.append(lis)
@@ -787,7 +792,7 @@ class Table(object):
     def read(self, filename, sep='\t', quotechar='\"', columnames=False, rownames=False, donumeric=False,
              dounicode=False):
 
-        with open(filename, 'rU') as infi:
+        with open(filename, 'r') as infi:
 
             try:
                 dialect = csv.Sniffer().sniff(infi.read(1024))
@@ -800,10 +805,10 @@ class Table(object):
                 csvhandle = csv.reader(infi, delimiter=sep, quotechar=quotechar)
 
             if columnames:
-                self.columnames = [ele.strip() for ele in csvhandle.next()]
+                self.columnames = [ele.strip() for ele in next(csvhandle)]
             elif isinstance(columnames, list) or isinstance(columnames, tuple):
                 self.columnames = columnames
-                csvhandle.next()
+                next(csvhandle)
 
             self.data = [[ele.strip() for ele in row] for row in csvhandle if row]
 
@@ -811,7 +816,7 @@ class Table(object):
             self.data = [[is_numeric(col) for col in row] for row in self.data]
 
         if dounicode:
-            self.data = [[unicode(str(col), errors='ignore') for col in row] for row in self.data]
+            self.data = [[str(str(col), errors='ignore') for col in row] for row in self.data]
 
         if rownames:
             self.rownames = [row[0] for row in self.data]
@@ -830,7 +835,7 @@ class Table(object):
             if isinstance(filtervalue, list) is False and isinstance(filtervalue, tuple) is False:
                 filtervalue = [filtervalue, ]
 
-        with open(filename, 'rU') as infi:
+        with open(filename, 'r') as infi:
             try:
                 dialect = csv.Sniffer().sniff(infi.read(1024))
                 infi.seek(0)
@@ -842,16 +847,16 @@ class Table(object):
                 csvhandle = csv.reader(infi, delimiter=sep, quotechar=quotechar)
 
             if columnames:
-                self.columnames = [ele.strip() for ele in csvhandle.next()]
+                self.columnames = [ele.strip() for ele in next(csvhandle)]
             elif isinstance(columnames, list) or isinstance(columnames, tuple):
                 self.columnames = columnames
-                csvhandle.next()
+                next(csvhandle)
 
             for row in csvhandle:
                 row = [ele.strip() for ele in row]
                 if filtercolumn:
                     assert len(row) == len(self.columnames), 'ERROR COLUMNAMES ROW MATCHING'
-                    col2val = dict(zip(self.columnames, row))
+                    col2val = dict(list(zip(self.columnames, row)))
                     if col2val[filtercolumn] not in filtervalue:
                         continue
                 yield row
@@ -859,7 +864,7 @@ class Table(object):
     def transpose(self):
         tmp = self.data
         tmp.insert(0, self.columnames)
-        tmp = map(list, itertools.izip(*tmp))
+        tmp = list(map(list, zip(*tmp)))
         self.columnames = tmp.pop(0)
         self.data = tmp
 
@@ -919,7 +924,7 @@ class Table(object):
     def puttablematrix(self):
         rownames = []
         colnames = []
-        for k, v in self.data.items():
+        for k, v in list(self.data.items()):
             rownames.append(k[0])
             colnames.append(k[1])
         colnames = list(set(colnames))
@@ -947,10 +952,12 @@ class Table(object):
             i += 1
         self.data = data
         self.columnames = tuple([indexcolumn] + list(self.columnames))
+
+
     def convert2yaml(self, keycolumn):
         yamldata = []
         for row in self.data:
-            row = dict(zip(self.columnames, row))
+            row = dict(list(zip(self.columnames, row)))
             key = row[keycolumn]
             val = dict(row)
             del val[keycolumn]
@@ -964,7 +971,7 @@ class Table(object):
         data = []
         assert isinstance(self.data, dict), NameError('data is not dict - probably not yaml?')
         valuecolumn = columnames[1:]
-        for k, v in self.data.items():
+        for k, v in list(self.data.items()):
             row = [k] + [v[vget] for vget in valuecolumn]
             data.append(row)
         self.data = data

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 
 from fhgeneral import venndiagram
@@ -14,7 +15,7 @@ def testrun():
     # NOT WORKING venndiagram.venn_runner(dataset,vennengine='rvennerable',outputdir='testfiles')
     # NOT WORKING venndiagram.venn_runner(dataset,vennengine='evenn',outputdir = 'testfiles')
 
-    print 'ALL TESTS RUN'
+    print('ALL TESTS RUN')
 
 if __name__ == '__main__':
     testrun()

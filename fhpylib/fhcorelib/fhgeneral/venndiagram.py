@@ -1,5 +1,9 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import os
-import fhutils
+from . import fhutils
 import itertools
 from dbtools.SQLitebase import SQLiteTools
 import rpy2.robjects as robjects
@@ -66,7 +70,7 @@ def writesets(datasets,outputdir,outformat='std'):
         
         
     else:
-        print 'nothing to do'
+        print('nothing to do')
 
 
 
@@ -132,7 +136,7 @@ def pyevenn(datasets,figurename='defaultevenn.png',outputdir=''):
         os.mkdir(os.path.join(outputdir,'evenn','output'))
         
     inputdir=os.path.join(outputdir,'evenn','input')
-    print inputdir
+    print(inputdir)
     outputdir=os.path.join(outputdir,'evenn','output')
     
     tabnames = writesets(datasets,outputdir=inputdir,outformat='evenn')
@@ -204,7 +208,7 @@ def unitest(lis):
     a = len(lis)
     b = len(set(lis))
     if a!=b:
-        print ' non unique list - duplicates eliminated -check list'
+        print(' non unique list - duplicates eliminated -check list')
 
 
 def venn_runner(dataset,outputfilename='vennrunner.txt',vennengine='',outputdir=''):
@@ -219,7 +223,7 @@ def venn_runner(dataset,outputfilename='vennrunner.txt',vennengine='',outputdir=
     uniqueinfo=[]
     commoninfo=[]
     for i in range(0,len(datadic)):
-        for v in itertools.combinations(datadic.keys(),i+1):
+        for v in itertools.combinations(list(datadic.keys()),i+1):
             combo=[set(datadic[x]) for x in v ]
             tmp=combo[0]
             excl=combo[0]
@@ -255,5 +259,5 @@ def venn_runner(dataset,outputfilename='vennrunner.txt',vennengine='',outputdir=
         logger.error('NOT WORKING rvennerable')
         pyrvennerable(dataset,figurename=fhutils.renamefilename(outputfilename,midtag='_'+vennengine,suffix='pdf'),outputdir=outputdir)
     else:
-        print 'no venn pdf'
+        print('no venn pdf')
 

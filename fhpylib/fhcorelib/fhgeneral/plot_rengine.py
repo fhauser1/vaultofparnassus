@@ -1,14 +1,19 @@
-import fhutils
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from . import fhutils
 import os
 
 import rpy2
-import rpy2.robjects
+# import rpy2.robjects
 from rpy2.robjects.packages import importr
 from rpy2.robjects.packages import SignatureTranslatedAnonymousPackage
 import rpy2.robjects.lib.ggplot2 as ggplot2
 from rpy2 import rinterface
 
-from fhstats import pyobj2dataframe
+from .fhstats import fhtab2dataframe
 
 
 def rpygraphinit():
@@ -66,21 +71,25 @@ def setupdata(tabdata, doscale, group, error, dofit=None):
         doscale = rpy2.robjects.vectors.FloatVector(tuple(doscale))
 
     if group in ('', 'NA', '1'):
-        group = rinterface.NACharacterType()
 
+        group = rpy2.robjects.NA_Logical
+
+        
     elif isinstance(group, tuple) or isinstance(group, list):
         group = rpy2.robjects.vectors.StrVector(list(group))
         tabdata, group = fusegroupcolumns(tabdata, group)
+    else:
+        print(group, 'GROUP NOT DEFINED')
 
     if isinstance(dofit, tuple):
         dofit = rpy2.robjects.vectors.StrVector(tuple(dofit))
     else:
-        dofit = rpy2.robjects.vectors.StrVector(tuple((0, 0)))
+        dofit = rpy2.robjects.vectors.StrVector(tuple(('0', '0')))
 
     if error in ('', 'NA'):
-        error = rinterface.NACharacterType()
+        error = rpy2.robjects.NA_Logical
 
-    dataframe = pyobj2dataframe(tabdata)
+    dataframe = fhtab2dataframe(tabdata)
 
     return dataframe, doscale, group, error, dofit
 
@@ -89,10 +98,13 @@ def ggscatterplot(tabdata, xvar='xaxis', yvar='yaxis', group='', error='', figna
                   main='title',
                   colormode='grey', graphncol=0, width=7, height=7, gformat='pdf', doscale=False, dolabelflip=False,
                   reducepnt=False, dofit=False):
+
     rconsole = rpygraphinit()
     rggscatterplot = rconsole("rggscatterplot")
     dopdfgraph = rconsole("dopdfgraph")
+    
     dataframe, doscale, group, error, dofit = setupdata(tabdata, doscale, group, error, dofit)
+    
     outgraph = rggscatterplot(tabdata=dataframe, xvar=xvar, yvar=yvar, error=error, main=main, group=group,
                               colormode=colormode, graphncol=graphncol,
                               doscale=doscale, dolabelflip=dolabelflip, reducepnt=reducepnt, dofit=dofit)
@@ -213,7 +225,7 @@ def simpleheatmap(tabdata, figname='defaultheatplot.pdf', main='title',
     rconsole = rpy2.robjects.r
     rsimpleheatmap = rconsole("rsimpleheatmap")
     dopdfgraph = rconsole("dopdfgraph")
-    rdataframe = pyobj2dataframe(tabdata, rownames=True, columnames=True)
+    rdataframe = fhtab2dataframe(tabdata, rownames=True, columnames=True)
 
     from rpy2.robjects.packages import importr
 
@@ -370,7 +382,7 @@ def barplot(tabdata, grouplabels, outputfile, xlegend='Number of genes', ylegend
 def hist_plot(tabdata, binalgorithm="Sturges", breaks=None, figname='defaulhistplotname.pdf', xlegend='xaxis',
               ylegend='yaxis'):
     if not tabdata:
-        print 'no values in tabdata'
+        print('no values in tabdata')
         return
 
     if isinstance(tabdata[0], basestring) and isinstance(tabdata[len(tabdata) - 1], basestring):
